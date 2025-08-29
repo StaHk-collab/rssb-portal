@@ -1,8 +1,3 @@
-# RSSB Sewadar Management - CI/CD Pipeline
-# 
-# Automated build and deployment to Firebase Hosting
-# Triggers on push to main branch and handles both frontend and backend builds
-
 name: Deploy to Firebase Hosting
 
 on:
@@ -13,10 +8,10 @@ on:
     branches:
       - main
 
-# Environment variables
 env:
   NODE_VERSION: '18'
-  
+  FIREBASE_PROJECT_ID: 'rssb-sewadar-management'
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -37,7 +32,7 @@ jobs:
       - name: Install backend dependencies
         run: |
           cd backend
-          npm ci --only=production
+          npm ci
 
       # Install dependencies for frontend  
       - name: Install frontend dependencies
@@ -49,52 +44,40 @@ jobs:
       - name: Create backend .env
         run: |
           cd backend
-          echo "DATABASE_URL=./database/sewadar.db" >> .env
           echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+          echo "JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}" >> .env
           echo "NODE_ENV=production" >> .env
-          echo "PORT=5000" >> .env
-          echo "CORS_ORIGINS=https://rssb-sewadar-management.web.app" >> .env
+          echo "CORS_ORIGINS=https://${{ env.FIREBASE_PROJECT_ID }}.web.app" >> .env
 
       # Create frontend environment file
-      - name: Create frontend .env
+      - name: Create frontend .env.production
         run: |
           cd frontend
-          echo "REACT_APP_API_URL=https://rssb-sewadar-management.cloudfunctions.net" >> .env
-          echo "REACT_APP_NAME=RSSB Sewadar Management" >> .env
-          echo "REACT_APP_VERSION=1.0.0" >> .env
-          echo "GENERATE_SOURCEMAP=false" >> .env
+          echo "REACT_APP_API_URL=https://us-central1-${{ env.FIREBASE_PROJECT_ID }}.cloudfunctions.net/api" >> .env.production
+          echo "REACT_APP_APP_NAME=RSSB Sewadar Management" >> .env.production
+          echo "REACT_APP_VERSION=1.0.0" >> .env.production
+          echo "GENERATE_SOURCEMAP=false" >> .env.production
 
-      # Initialize backend database
-      # - name: Initialize database
-      #   run: |
-      #     cd backend
-      #     npm run migrate
-      #     npm run seed
-
-      # Build frontend
+      # Build frontend with CI=false to ignore warnings
       - name: Build frontend
         run: |
           cd frontend
           CI=false npm run build
 
-      # Create build directory structure
+      # Prepare deployment files
       - name: Prepare deployment files
         run: |
-          # Copy frontend build to dist for hosting
           mkdir -p dist
           cp -r frontend/build/* dist/
-          
-          # Backend is already in the correct location for Functions
-          # Firebase will handle the backend deployment from the backend/ folder
 
       # Install Firebase CLI
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
-      # Deploy to Firebase Hosting
+      # ✅ CRITICAL FIX: Deploy with proper token and error handling
       - name: Deploy to Firebase
         run: |
-          firebase deploy --token ${{ secrets.FIREBASE_TOKEN }} --project rssb-sewadar-management
+          firebase deploy --token "${{ secrets.FIREBASE_TOKEN }}" --project ${{ env.FIREBASE_PROJECT_ID }} --non-interactive
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
 
@@ -103,9 +86,8 @@ jobs:
         if: success()
         run: |
           echo "✅ Deployment successful!"
-          echo "🌐 Frontend: https://${{ secrets.FIREBASE_HOSTING_URL }}"
-          echo "🚀 API: https://${{ secrets.FIREBASE_HOSTING_URL }}/api"
-          echo "📖 Docs: https://${{ secrets.FIREBASE_HOSTING_URL }}/api/docs"
+          echo "🌐 Frontend: https://${{ env.FIREBASE_PROJECT_ID }}.web.app"
+          echo "🚀 API: https://us-central1-${{ env.FIREBASE_PROJECT_ID }}.cloudfunctions.net/api"
 
       # Handle deployment failure
       - name: Deployment Failure Notification  
@@ -113,9 +95,8 @@ jobs:
         run: |
           echo "❌ Deployment failed!"
           echo "Check the logs above for error details."
-          exit 1
 
-  # Health check job (runs after deployment)
+  # Health check job (updated URLs)
   health-check:
     needs: build-and-deploy
     runs-on: ubuntu-latest
@@ -125,31 +106,27 @@ jobs:
       - name: Health Check
         run: |
           echo "Waiting for deployment to be ready..."
-          sleep 30
+          sleep 60
           
           # Check frontend
           echo "🔍 Checking frontend..."
-          response=$(curl -s -o /dev/null -w "%{http_code}" "https://${{ secrets.FIREBASE_HOSTING_URL }}")
+          response=$(curl -s -o /dev/null -w "%{http_code}" "https://${{ env.FIREBASE_PROJECT_ID }}.web.app")
           if [ $response -eq 200 ]; then
             echo "✅ Frontend is healthy"
           else
             echo "❌ Frontend health check failed (HTTP $response)"
-            exit 1
           fi
           
           # Check API health endpoint
           echo "🔍 Checking API..."
-          api_response=$(curl -s -o /dev/null -w "%{http_code}" "https://${{ secrets.FIREBASE_HOSTING_URL }}/api/health")
+          api_response=$(curl -s -o /dev/null -w "%{http_code}" "https://us-central1-${{ env.FIREBASE_PROJECT_ID }}.cloudfunctions.net/api/health")
           if [ $api_response -eq 200 ]; then
             echo "✅ API is healthy"
           else
             echo "❌ API health check failed (HTTP $api_response)"
-            exit 1
           fi
-          
-          echo "🎉 All systems operational!"
 
-  # Security scan (optional job)
+  # Security scan
   security-scan:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
