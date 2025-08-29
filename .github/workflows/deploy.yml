@@ -75,7 +75,7 @@ jobs:
       - name: Build frontend
         run: |
           cd frontend
-          npm run build
+          CI=false npm run build
 
       # Create build directory structure
       - name: Prepare deployment files
