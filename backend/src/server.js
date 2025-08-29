@@ -55,8 +55,8 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
 // Security middleware
 app.use(helmet({
-  contentSecurityPolicy: true, // Disable CSP for development
-  crossOriginEmbedderPolicy: true
+  contentSecurityPolicy: false, // Disable CSP for development
+  crossOriginEmbedderPolicy: false
 }));
 
 // Rate limiting

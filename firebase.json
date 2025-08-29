@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "dist",
+    "public": "frontend/build",
     "ignore": [
       "firebase.json",
       "**/.*",
@@ -57,9 +57,9 @@
     "trailingSlash": false
   },
   "functions": {
-    "source": "dist/api",
+    "source": "backend",
     "runtime": "nodejs18",
-    "predeploy": "npm --prefix dist/api install"
+    "predeploy": "npm --prefix backend install"
   },
   "emulators": {
     "hosting": {

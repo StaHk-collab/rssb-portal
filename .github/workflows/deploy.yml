@@ -53,23 +53,23 @@ jobs:
           echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
           echo "NODE_ENV=production" >> .env
           echo "PORT=5000" >> .env
-          echo "CORS_ORIGINS=https://${{ secrets.FIREBASE_HOSTING_URL }}" >> .env
+          echo "CORS_ORIGINS=https://rssb-sewadar-management.web.app" >> .env
 
       # Create frontend environment file
       - name: Create frontend .env
         run: |
           cd frontend
-          echo "REACT_APP_API_URL=https://${{ secrets.FIREBASE_HOSTING_URL }}/api" >> .env
+          echo "REACT_APP_API_URL=https://rssb-sewadar-management.cloudfunctions.net" >> .env
           echo "REACT_APP_NAME=RSSB Sewadar Management" >> .env
           echo "REACT_APP_VERSION=1.0.0" >> .env
           echo "GENERATE_SOURCEMAP=false" >> .env
 
       # Initialize backend database
-      - name: Initialize database
-        run: |
-          cd backend
-          npm run migrate
-          npm run seed
+      # - name: Initialize database
+      #   run: |
+      #     cd backend
+      #     npm run migrate
+      #     npm run seed
 
       # Build frontend
       - name: Build frontend
@@ -80,16 +80,12 @@ jobs:
       # Create build directory structure
       - name: Prepare deployment files
         run: |
+          # Copy frontend build to dist for hosting
           mkdir -p dist
-          # Copy frontend build
           cp -r frontend/build/* dist/
-          # Copy backend files
-          mkdir -p dist/api
-          cp -r backend/src dist/api/
-          cp -r backend/package*.json dist/api/
-          cp -r backend/database dist/api/
-          # Create API startup script
-          echo '{"name":"rssb-api","scripts":{"start":"node src/server.js"},"dependencies":{"express":"^4.18.2","cors":"^2.8.5","helmet":"^7.1.0","bcryptjs":"^2.4.3","jsonwebtoken":"^9.0.2","joi":"^17.12.1","express-rate-limit":"^7.1.5","winston":"^3.11.0","dotenv":"^16.4.5","better-sqlite3":"^9.4.0","uuid":"^9.0.1","swagger-ui-express":"^5.0.0","swagger-jsdoc":"^6.2.8"}}' > dist/api/package.json
+          
+          # Backend is already in the correct location for Functions
+          # Firebase will handle the backend deployment from the backend/ folder
 
       # Install Firebase CLI
       - name: Install Firebase CLI
@@ -98,7 +94,7 @@ jobs:
       # Deploy to Firebase Hosting
       - name: Deploy to Firebase
         run: |
-          firebase deploy --only hosting --token ${{ secrets.FIREBASE_TOKEN }} --project ${{ secrets.FIREBASE_PROJECT_ID }}
+          firebase deploy --token ${{ secrets.FIREBASE_TOKEN }} --project rssb-sewadar-management
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
 
