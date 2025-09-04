@@ -72,7 +72,6 @@ const corsOptions = {
   origin: [
     'http://localhost:3000', // Local development
     'https://rssb-sewadar.netlify.app' // Your Netlify URL
-    // 'https://yoursite.tk' // Custom domain if you have one
   ],
   credentials: true,
    allowedHeaders: [
@@ -85,8 +84,7 @@ const corsOptions = {
   ],
   exposedHeaders: ['Authorization'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  optionsSuccessStatus: 200,
-  preflightContinue: false // Pass control to next handler
+  optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
 
