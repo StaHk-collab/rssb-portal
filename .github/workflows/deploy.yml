@@ -1,4 +1,4 @@
-name: Deploy to Firebase Hosting
+name: Deploy Frontend to Netlify
 
 on:
   push:
@@ -10,123 +10,42 @@ on:
 
 env:
   NODE_VERSION: '18'
-  FIREBASE_PROJECT_ID: 'rssb-sewadar-management'
 
 jobs:
-  build-and-deploy:
+  build-and-deploy-frontend:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     
     steps:
-      # Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      # Setup Node.js
+        
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-
-      # Install dependencies for backend
-      - name: Install backend dependencies
-        run: |
-          cd backend
-          npm ci
-
-      # Install dependencies for frontend  
+          
       - name: Install frontend dependencies
         run: |
           cd frontend
           npm ci
-
-      # Create backend environment file
-      - name: Create backend .env
-        run: |
-          cd backend
-          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
-          echo "JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}" >> .env
-          echo "NODE_ENV=production" >> .env
-          echo "CORS_ORIGINS=https://${{ env.FIREBASE_PROJECT_ID }}.web.app" >> .env
-
-      # Create frontend environment file
-      - name: Create frontend .env.production
-        run: |
-          cd frontend
-          echo "REACT_APP_API_URL=https://us-central1-${{ env.FIREBASE_PROJECT_ID }}.cloudfunctions.net/api" >> .env.production
-          echo "REACT_APP_APP_NAME=RSSB Sewadar Management" >> .env.production
-          echo "REACT_APP_VERSION=1.0.0" >> .env.production
-          echo "GENERATE_SOURCEMAP=false" >> .env.production
-
-      # Build frontend with CI=false to ignore warnings
+          
       - name: Build frontend
         run: |
           cd frontend
           CI=false npm run build
-
-      # Prepare deployment files
-      - name: Prepare deployment files
-        run: |
-          mkdir -p dist
-          cp -r frontend/build/* dist/
-
-      # Install Firebase CLI
-      - name: Install Firebase CLI
-        run: npm install -g firebase-tools
-
-      # ✅ CRITICAL FIX: Deploy with proper token and error handling
-      - name: Deploy to Firebase
-        run: |
-          firebase deploy --token "${{ secrets.FIREBASE_TOKEN }}" --project ${{ env.FIREBASE_PROJECT_ID }} --non-interactive
+          
+      - name: Deploy to Netlify
+        uses: nwtgck/actions-netlify@v1.2
+        with:
+          publish-dir: './frontend/build'
+          production-branch: main
+          deploy-message: "Deploy from GitHub Actions"
         env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
 
-      # Post-deployment notification
-      - name: Deployment Success Notification
-        if: success()
-        run: |
-          echo "✅ Deployment successful!"
-          echo "🌐 Frontend: https://${{ env.FIREBASE_PROJECT_ID }}.web.app"
-          echo "🚀 API: https://us-central1-${{ env.FIREBASE_PROJECT_ID }}.cloudfunctions.net/api"
-
-      # Handle deployment failure
-      - name: Deployment Failure Notification  
-        if: failure()
-        run: |
-          echo "❌ Deployment failed!"
-          echo "Check the logs above for error details."
-
-  # Health check job (updated URLs)
-  health-check:
-    needs: build-and-deploy
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-      - name: Health Check
-        run: |
-          echo "Waiting for deployment to be ready..."
-          sleep 60
-          
-          # Check frontend
-          echo "🔍 Checking frontend..."
-          response=$(curl -s -o /dev/null -w "%{http_code}" "https://${{ env.FIREBASE_PROJECT_ID }}.web.app")
-          if [ $response -eq 200 ]; then
-            echo "✅ Frontend is healthy"
-          else
-            echo "❌ Frontend health check failed (HTTP $response)"
-          fi
-          
-          # Check API health endpoint
-          echo "🔍 Checking API..."
-          api_response=$(curl -s -o /dev/null -w "%{http_code}" "https://us-central1-${{ env.FIREBASE_PROJECT_ID }}.cloudfunctions.net/api/health")
-          if [ $api_response -eq 200 ]; then
-            echo "✅ API is healthy"
-          else
-            echo "❌ API health check failed (HTTP $api_response)"
-          fi
-
-  # Security scan
   security-scan:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
@@ -135,10 +54,27 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         
-      - name: Run security audit
+      - name: Run security audit for backend
         run: |
           cd backend && npm audit --audit-level=high
-          cd ../frontend && npm audit --audit-level=high
           
-      - name: Security scan passed
-        run: echo "🔒 Security scan completed successfully"
+      - name: Run security audit for frontend
+        run: |
+          cd frontend && npm audit --audit-level=high
+
+  health-check:
+    needs: build-and-deploy-frontend
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Wait for deployments
+        run: sleep 60
+        
+      - name: Check frontend health
+        run: |
+          curl -fsS https://rssb-sewadar.netlify.app/ || exit 1
+          
+      - name: Check backend health
+        run: |
+          curl -fsS https://rssb-portal-production.up.railway.app/api/health || exit 1
