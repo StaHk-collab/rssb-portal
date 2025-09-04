@@ -20,8 +20,9 @@ router.post('/login',
     const db = getDatabase();
 
     // Find user by email
-    const user = db.prepare('SELECT * FROM users WHERE email = ? AND isActive = 1').get(email);
-    
+    const userResult = await db.query('SELECT * FROM users WHERE email = $1 AND is_active = TRUE', [email]);
+    const user = userResult.rows[0];
+
     if (!user) {
       logger.warn(`Login attempt with invalid email: ${email} from ${req.ip}`);
       throw new AppError('Invalid email or password', 401);
@@ -55,11 +56,10 @@ router.post('/login',
     );
 
     // Log successful login
-    const auditStmt = db.prepare(`
-      INSERT INTO audit_logs (id, action, userId, entity, entityId, details)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-    auditStmt.run(uuidv4(), 'LOGIN', user.id, 'USER', user.id, `User logged in from ${req.ip}`);
+    await db.query(
+      'INSERT INTO audit_logs (id, action, user_id, entity, entity_id, details) VALUES ($1, $2, $3, $4, $5, $6)',
+      [uuidv4(), 'LOGIN', user.id, 'USER', user.id, `User logged in from ${req.ip}`]
+    );
 
     logger.info(`User ${email} logged in successfully from ${req.ip}`);
 
@@ -70,15 +70,15 @@ router.post('/login',
       user: {
         id: user.id,
         email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
+        firstName: user.first_name,  // ✅ FIXED: Using snake_case from DB
+        lastName: user.last_name,    // ✅ FIXED: Using snake_case from DB
         role: user.role
       }
     });
   })
 );
 
-// Other routes remain the same...
+// User registration
 router.post('/register', authenticateToken, validate('userRegistration'), asyncHandler(async (req, res) => {
   // Only admins can create new users
   if (req.user.role !== 'ADMIN') {
@@ -89,7 +89,9 @@ router.post('/register', authenticateToken, validate('userRegistration'), asyncH
   const db = getDatabase();
 
   // Check if user already exists
-  const existingUser = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+  const existingResult = await db.query('SELECT id FROM users WHERE email = $1', [email]);
+  const existingUser = existingResult.rows[0];
+
   if (existingUser) {
     throw new AppError('Email already registered', 409);
   }
@@ -99,25 +101,15 @@ router.post('/register', authenticateToken, validate('userRegistration'), asyncH
 
   // Create new user
   const userId = uuidv4();
-  const insertStmt = db.prepare(`
-    INSERT INTO users (id, email, password, firstName, lastName, role, isActive)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `);
+  await db.query(
+    'INSERT INTO users (id, email, password, first_name, last_name, role, is_active) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+    [userId, email, hashedPassword, firstName, lastName, role, true]
+  );
 
-  insertStmt.run(userId, email, hashedPassword, firstName, lastName, role, 1);
-
-  // Log user creation
-  const auditStmt = db.prepare(`
-    INSERT INTO audit_logs (id, action, userId, entity, entityId, details)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `);
-  auditStmt.run(
-    uuidv4(), 
-    'CREATE_USER', 
-    req.user.userId, 
-    'USER', 
-    userId, 
-    `Created new user: ${email} with role: ${role}`
+  // ✅ FIXED: Log user creation with PostgreSQL
+  await db.query(
+    'INSERT INTO audit_logs (id, action, user_id, entity, entity_id, details) VALUES ($1, $2, $3, $4, $5, $6)',
+    [uuidv4(), 'CREATE_USER', req.user.userId, 'USER', userId, `Created new user: ${email} with role: ${role}`]
   );
 
   logger.info(`New user registered: ${email} by admin: ${req.user.email}`);
@@ -135,12 +127,19 @@ router.post('/register', authenticateToken, validate('userRegistration'), asyncH
   });
 }));
 
+// ✅ FIXED: Get current user profile
 router.get('/me', authenticateToken, asyncHandler(async (req, res) => {
   const db = getDatabase();
-  const user = db.prepare(`
-    SELECT id, email, firstName, lastName, role, isActive, createdAt, updatedAt
-    FROM users WHERE id = ?
-  `).get(req.user.userId);
+  
+  const userResult = await db.query(`
+    SELECT id, email, first_name AS "firstName", last_name AS "lastName", 
+           role, is_active AS "isActive", created_at AS "createdAt", 
+           updated_at AS "updatedAt"
+    FROM users 
+    WHERE id = $1
+  `, [req.user.userId]);
+  
+  const user = userResult.rows[0];
 
   if (!user) {
     throw new AppError('User not found', 404);
@@ -152,15 +151,15 @@ router.get('/me', authenticateToken, asyncHandler(async (req, res) => {
   });
 }));
 
+// ✅ FIXED: Logout with PostgreSQL audit log
 router.post('/logout', authenticateToken, asyncHandler(async (req, res) => {
   const db = getDatabase();
   
   // Log logout
-  const auditStmt = db.prepare(`
-    INSERT INTO audit_logs (id, action, userId, entity, entityId, details)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `);
-  auditStmt.run(uuidv4(), 'LOGOUT', req.user.userId, 'USER', req.user.userId, `User logged out from ${req.ip}`);
+  await db.query(
+    'INSERT INTO audit_logs (id, action, user_id, entity, entity_id, details) VALUES ($1, $2, $3, $4, $5, $6)',
+    [uuidv4(), 'LOGOUT', req.user.userId, 'USER', req.user.userId, `User logged out from ${req.ip}`]
+  );
 
   logger.info(`User ${req.user.email} logged out from ${req.ip}`);
 

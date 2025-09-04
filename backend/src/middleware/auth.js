@@ -51,7 +51,7 @@ const authenticateToken = (req, res, next) => {
     });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+  jwt.verify(token, process.env.JWT_SECRET, async (err, user) => {
     if (err) {
       logger.warn(`Token verification failed from ${req.ip}: ${err.message}`);
       logger.warn('Token that failed:', token);
@@ -65,8 +65,10 @@ const authenticateToken = (req, res, next) => {
 
     // Verify user still exists and is active
     const db = getDatabase();
-    const dbUser = db.prepare('SELECT * FROM users WHERE id = ? AND isActive = 1').get(user.userId);
     
+    const userResult = await db.query('SELECT * FROM users WHERE id = $1 AND is_active = TRUE', [user.userId]);
+    const dbUser = userResult.rows[0];
+
     if (!dbUser) {
       logger.warn('User not found or inactive:', user.userId);
       return res.status(403).json({

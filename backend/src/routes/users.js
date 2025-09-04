@@ -28,11 +28,21 @@ router.get('/',
   asyncHandler(async (req, res) => {
     const db = getDatabase();
     
-    const users = db.prepare(`
-      SELECT id, email, firstName, lastName, role, isActive, createdAt, updatedAt
+    const usersResult = await db.query(`
+      SELECT 
+        id, 
+        email, 
+        first_name AS "firstName", 
+        last_name AS "lastName", 
+        role, 
+        is_active AS "isActive", 
+        created_at AS "createdAt", 
+        updated_at AS "updatedAt"
       FROM users
-      ORDER BY createdAt DESC
-    `).all();
+      ORDER BY created_at DESC
+    `);
+    
+    const users = usersResult.rows;
     
     res.json({
       success: true,
@@ -68,22 +78,34 @@ router.get('/:id',
     const db = getDatabase();
     const { id } = req.params;
     
-    const user = db.prepare(`
-      SELECT id, email, firstName, lastName, role, isActive, createdAt, updatedAt
+    const userResult = await db.query(`
+      SELECT 
+        id, 
+        email, 
+        first_name AS "firstName", 
+        last_name AS "lastName", 
+        role, 
+        is_active AS "isActive", 
+        created_at AS "createdAt", 
+        updated_at AS "updatedAt"
       FROM users 
-      WHERE id = ?
-    `).get(id);
+      WHERE id = $1
+    `, [id]);
+    
+    const user = userResult.rows[0];
     
     if (!user) {
       throw new AppError('User not found', 404);
     }
     
     // Get user's sewadar creation stats
-    const stats = db.prepare(`
-      SELECT COUNT(*) as sewadarsCreated
+    const statsResult = await db.query(`
+      SELECT COUNT(*) AS "sewadarsCreated"
       FROM sewadars
-      WHERE createdBy = ?
-    `).get(id);
+      WHERE created_by = $1
+    `, [id]);
+    
+    const stats = statsResult.rows[0];
     
     res.json({
       success: true,
@@ -140,7 +162,9 @@ router.put('/:id',
     const { id } = req.params;
     
     // Check if user exists
-    const existingUser = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+    const existingResult = await db.query('SELECT * FROM users WHERE id = $1', [id]);
+    const existingUser = existingResult.rows[0];
+    
     if (!existingUser) {
       throw new AppError('User not found', 404);
     }
@@ -150,14 +174,24 @@ router.put('/:id',
       throw new AppError('Cannot deactivate your own account', 400);
     }
     
-    // Build dynamic update query
+    // Build dynamic update query with field mapping
+    const fieldMap = {
+      firstName: 'first_name',
+      lastName: 'last_name',
+      role: 'role',
+      isActive: 'is_active'
+    };
+    
     const updates = [];
     const values = [];
+    let paramIndex = 1;
     
     Object.keys(req.body).forEach(key => {
-      if (req.body[key] !== undefined) {
-        updates.push(`${key} = ?`);
+      if (req.body[key] !== undefined && fieldMap[key]) {
+        const dbColumn = fieldMap[key];
+        updates.push(`${dbColumn} = $${paramIndex}`);
         values.push(req.body[key]);
+        paramIndex++;
       }
     });
     
@@ -165,38 +199,47 @@ router.put('/:id',
       throw new AppError('No valid fields provided for update', 400);
     }
     
-    // Add updatedAt timestamp
-    updates.push('updatedAt = CURRENT_TIMESTAMP');
+    // Add updatedAt timestamp and id parameter
+    updates.push(`updated_at = NOW()`);
     values.push(id);
     
     const updateQuery = `
       UPDATE users 
       SET ${updates.join(', ')}
-      WHERE id = ?
+      WHERE id = $${paramIndex}
     `;
     
-    db.prepare(updateQuery).run(...values);
+    await db.query(updateQuery, values);
     
     // Log the update
-    const auditStmt = db.prepare(`
-      INSERT INTO audit_logs (id, action, userId, entity, entityId, details)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-    auditStmt.run(
+    await db.query(`
+      INSERT INTO audit_logs (id, action, user_id, entity, entity_id, details)
+      VALUES ($1, $2, $3, $4, $5, $6)
+    `, [
       uuidv4(), 
       'UPDATE_USER', 
       req.user.userId, 
       'USER', 
       id,
       `Updated user: ${existingUser.email}`
-    );
+    ]);
     
     // Fetch updated user
-    const updatedUser = db.prepare(`
-      SELECT id, email, firstName, lastName, role, isActive, createdAt, updatedAt
+    const updatedResult = await db.query(`
+      SELECT 
+        id, 
+        email, 
+        first_name AS "firstName", 
+        last_name AS "lastName", 
+        role, 
+        is_active AS "isActive", 
+        created_at AS "createdAt", 
+        updated_at AS "updatedAt"
       FROM users 
-      WHERE id = ?
-    `).get(id);
+      WHERE id = $1
+    `, [id]);
+    
+    const updatedUser = updatedResult.rows[0];
     
     res.json({
       success: true,
@@ -251,7 +294,9 @@ router.post('/:id/reset-password',
     }
     
     // Check if user exists
-    const existingUser = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+    const existingResult = await db.query('SELECT * FROM users WHERE id = $1', [id]);
+    const existingUser = existingResult.rows[0];
+    
     if (!existingUser) {
       throw new AppError('User not found', 404);
     }
@@ -260,22 +305,23 @@ router.post('/:id/reset-password',
     const hashedPassword = await bcrypt.hash(newPassword, 12);
     
     // Update password
-    db.prepare('UPDATE users SET password = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?')
-      .run(hashedPassword, id);
+    await db.query(
+      'UPDATE users SET password = $1, updated_at = NOW() WHERE id = $2',
+      [hashedPassword, id]
+    );
     
     // Log the password reset
-    const auditStmt = db.prepare(`
-      INSERT INTO audit_logs (id, action, userId, entity, entityId, details)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-    auditStmt.run(
+    await db.query(`
+      INSERT INTO audit_logs (id, action, user_id, entity, entity_id, details)
+      VALUES ($1, $2, $3, $4, $5, $6)
+    `, [
       uuidv4(), 
       'RESET_PASSWORD', 
       req.user.userId, 
       'USER', 
       id,
       `Password reset for user: ${existingUser.email}`
-    );
+    ]);
     
     res.json({
       success: true,
@@ -314,7 +360,9 @@ router.delete('/:id',
     const { id } = req.params;
     
     // Check if user exists
-    const existingUser = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+    const existingResult = await db.query('SELECT * FROM users WHERE id = $1', [id]);
+    const existingUser = existingResult.rows[0];
+    
     if (!existingUser) {
       throw new AppError('User not found', 404);
     }
@@ -325,8 +373,13 @@ router.delete('/:id',
     }
     
     // Check if user has created sewadars
-    const sewadarCount = db.prepare('SELECT COUNT(*) as count FROM sewadars WHERE createdBy = ?').get(id);
-    if (sewadarCount.count > 0) {
+    const sewadarCountResult = await db.query(
+      'SELECT COUNT(*) as count FROM sewadars WHERE created_by = $1', 
+      [id]
+    );
+    const sewadarCount = sewadarCountResult.rows[0];
+    
+    if (parseInt(sewadarCount.count, 10) > 0) {
       throw new AppError(
         `Cannot delete user who has created ${sewadarCount.count} sewadar records. Please reassign or delete the records first.`,
         400
@@ -334,21 +387,20 @@ router.delete('/:id',
     }
     
     // Delete user
-    db.prepare('DELETE FROM users WHERE id = ?').run(id);
+    await db.query('DELETE FROM users WHERE id = $1', [id]);
     
     // Log the deletion
-    const auditStmt = db.prepare(`
-      INSERT INTO audit_logs (id, action, userId, entity, entityId, details)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-    auditStmt.run(
+    await db.query(`
+      INSERT INTO audit_logs (id, action, user_id, entity, entity_id, details)
+      VALUES ($1, $2, $3, $4, $5, $6)
+    `, [
       uuidv4(), 
       'DELETE_USER', 
       req.user.userId, 
       'USER', 
       id,
       `Deleted user: ${existingUser.email}`
-    );
+    ]);
     
     res.json({
       success: true,

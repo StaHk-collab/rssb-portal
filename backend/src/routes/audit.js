@@ -23,62 +23,70 @@ router.get('/',
     } = req.query;
 
     const offset = (parseInt(page) - 1) * parseInt(limit);
-
     let whereClause = 'WHERE 1=1';
     let params = [];
+    let paramIndex = 1;
 
-    // Filtering
+    // ✅ FIXED: Build dynamic WHERE clause with proper PostgreSQL parameters
     if (action) {
-      whereClause += ' AND LOWER(a.action) LIKE ?';
+      whereClause += ` AND LOWER(a.action) LIKE $${paramIndex}`;
       params.push(`%${action.toUpperCase()}%`);
+      paramIndex++;
     }
     if (userId) {
-      whereClause += ' AND a.userId = ?';
+      whereClause += ` AND a.user_id = $${paramIndex}`;
       params.push(userId);
+      paramIndex++;
     }
     if (entity) {
-      whereClause += ' AND a.entity = ?';
+      whereClause += ` AND a.entity = $${paramIndex}`;
       params.push(entity);
+      paramIndex++;
     }
     if (search) {
-      whereClause += ' AND (a.details LIKE ? OR u.firstName LIKE ? OR u.lastName LIKE ?)';
+      whereClause += ` AND (a.details LIKE $${paramIndex} OR u.first_name LIKE $${paramIndex + 1} OR u.last_name LIKE $${paramIndex + 2})`;
       const pattern = `%${search}%`;
       params.push(pattern, pattern, pattern);
+      paramIndex += 3;
     }
     if (startDate) {
-      whereClause += ' AND DATE(a.timestamp) >= DATE(?)';
+      whereClause += ` AND a.timestamp::date >= $${paramIndex}::date`;
       params.push(startDate);
+      paramIndex++;
     }
     if (endDate) {
-      whereClause += ' AND DATE(a.timestamp) <= DATE(?)';
+      whereClause += ` AND a.timestamp::date <= $${paramIndex}::date`;
       params.push(endDate);
+      paramIndex++;
     }
 
-    // Get total count
+    // ✅ FIXED: Get total count with proper column names
     const countQuery = `SELECT COUNT(*) as total FROM audit_logs a ${whereClause}`;
-    const { total } = db.prepare(countQuery).get(...params);
+    const countResult = await db.query(countQuery, params);
+    const total = parseInt(countResult.rows[0].total, 10);
 
-    // Get paginated logs with user
+    // ✅ FIXED: Get paginated logs with proper column names and parameters
     const auditQuery = `
       SELECT 
         a.*,
-        u.firstName as userFirstName,
-        u.lastName as userLastName,
-        u.email as userEmail,
-        -- Add computed fullName for display convenience
+        u.first_name AS "userFirstName",
+        u.last_name AS "userLastName",
+        u.email AS "userEmail",
         CASE
-          WHEN u.firstName IS NOT NULL AND u.lastName IS NOT NULL THEN u.firstName || ' ' || u.lastName
-          WHEN u.firstName IS NOT NULL THEN u.firstName
+          WHEN u.first_name IS NOT NULL AND u.last_name IS NOT NULL THEN u.first_name || ' ' || u.last_name
+          WHEN u.first_name IS NOT NULL THEN u.first_name
           WHEN u.email IS NOT NULL THEN u.email
           ELSE 'Unknown User'
-        END as userFullName
+        END AS "userFullName"
       FROM audit_logs a
-      LEFT JOIN users u ON a.userId = u.id
+      LEFT JOIN users u ON a.user_id = u.id
       ${whereClause}
       ORDER BY a.timestamp DESC
-      LIMIT ? OFFSET ?
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
-    const auditLogs = db.prepare(auditQuery).all(...params, parseInt(limit), offset);
+    
+    const auditResult = await db.query(auditQuery, [...params, parseInt(limit), offset]);
+    const auditLogs = auditResult.rows;
 
     res.json({
       success: true,
@@ -93,77 +101,78 @@ router.get('/',
   })
 );
 
-/**
- * @swagger
- * /audit/stats:
- *   get:
- *     summary: Get audit statistics (Admin only)
- *     tags: [Audit]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Audit statistics retrieved successfully
- */
+// GET /api/audit-logs/stats
 router.get('/stats', 
   authenticateToken,
   requireAdmin,
   asyncHandler(async (req, res) => {
     const db = getDatabase();
     
-    const stats = {
-      totalActions: db.prepare('SELECT COUNT(*) as count FROM audit_logs').get().count,
-      todaysActions: db.prepare(`
-        SELECT COUNT(*) as count 
-        FROM audit_logs 
-        WHERE date(timestamp) = date('now')
-      `).get().count,
-      thisWeekActions: db.prepare(`
-        SELECT COUNT(*) as count 
-        FROM audit_logs 
-        WHERE timestamp >= datetime('now', '-7 days')
-      `).get().count,
-      byAction: {},
-      byUser: [],
-      recentActions: db.prepare(`
-        SELECT 
-          a.*,
-          u.firstName as userFirstName,
-          u.lastName as userLastName,
-          u.email as userEmail
-        FROM audit_logs a
-        LEFT JOIN users u ON a.userId = u.id
-        ORDER BY a.timestamp DESC
-        LIMIT 10
-      `).all()
-    };
-    
-    // Get action breakdown
-    const actionStats = db.prepare(`
-      SELECT action, COUNT(*) as count 
+    const stats = {};
+
+    // ✅ FIXED: All stats queries converted to PostgreSQL
+    const totalResult = await db.query('SELECT COUNT(*) AS count FROM audit_logs');
+    stats.totalActions = parseInt(totalResult.rows[0].count, 10);
+
+    const todayResult = await db.query(`
+      SELECT COUNT(*) AS count 
+      FROM audit_logs 
+      WHERE timestamp::date = CURRENT_DATE
+    `);
+    stats.todaysActions = parseInt(todayResult.rows[0].count, 10);
+
+    const weekResult = await db.query(`
+      SELECT COUNT(*) AS count 
+      FROM audit_logs 
+      WHERE timestamp >= NOW() - INTERVAL '7 days'
+    `);
+    stats.thisWeekActions = parseInt(weekResult.rows[0].count, 10);
+
+    // Initialize containers
+    stats.byAction = {};
+    stats.byUser = [];
+
+    // Recent 10 actions with user info
+    const recentResult = await db.query(`
+      SELECT 
+        a.*,
+        u.first_name AS "userFirstName",
+        u.last_name AS "userLastName",
+        u.email AS "userEmail"
+      FROM audit_logs a
+      LEFT JOIN users u ON a.user_id = u.id
+      ORDER BY a.timestamp DESC
+      LIMIT 10
+    `);
+    stats.recentActions = recentResult.rows;
+
+    // Actions grouped by type
+    const actionResult = await db.query(`
+      SELECT action, COUNT(*) AS count 
       FROM audit_logs 
       GROUP BY action 
       ORDER BY count DESC
-    `).all();
-    
-    actionStats.forEach(row => {
-      stats.byAction[row.action] = row.count;
+    `);
+
+    actionResult.rows.forEach(row => {
+      stats.byAction[row.action] = parseInt(row.count, 10);
     });
-    
-    // Get user activity stats
-    stats.byUser = db.prepare(`
+
+    // User activity stats
+    const userResult = await db.query(`
       SELECT 
-        u.firstName,
-        u.lastName,
+        u.first_name,
+        u.last_name,
         u.email,
-        COUNT(a.id) as actionCount
+        COUNT(a.id) AS "actionCount"
       FROM users u
-      LEFT JOIN audit_logs a ON u.id = a.userId
-      WHERE u.isActive = 1
-      GROUP BY u.id
-      ORDER BY actionCount DESC
+      LEFT JOIN audit_logs a ON u.id = a.user_id
+      WHERE u.is_active = TRUE
+      GROUP BY u.id, u.first_name, u.last_name, u.email
+      ORDER BY "actionCount" DESC
       LIMIT 10
-    `).all();
+    `);
+    stats.byUser = userResult.rows;
     
     res.json({
       success: true,
