@@ -69,7 +69,11 @@ app.use('/api/', limiter);
 
 // CORS configuration
 const corsOptions = {
-  origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000'],
+  origin: [
+    'http://localhost:3000', // Local development
+    'https://rssb-portal-production.up.railway.app/' // Your Netlify URL
+    // 'https://yoursite.tk' // Custom domain if you have one
+  ],
   credentials: true,
    allowedHeaders: [
     'Origin',
