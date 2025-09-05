@@ -11,8 +11,6 @@ const initializeDatabase = async () => {
   try {
     console.log('🔄 Initializing PostgreSQL database...');
 
-    console.log('🔍 DATABASE_URL:', process.env.DATABASE_URL);
-
     // Create users table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
