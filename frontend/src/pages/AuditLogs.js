@@ -87,7 +87,7 @@ const AuditLogs = () => {
     if (isPolling) {
       pollingRef.current = setInterval(() => {
         loadAuditLogs();
-      }, 5000); // Poll every 5 seconds
+      }, 30000); // Poll every 30 seconds
     } else {
       if (pollingRef.current) {
         clearInterval(pollingRef.current);

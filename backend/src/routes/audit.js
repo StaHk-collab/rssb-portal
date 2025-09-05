@@ -28,13 +28,27 @@ router.get('/',
     let paramIndex = 1;
 
     // ✅ FIXED: Build dynamic WHERE clause with proper PostgreSQL parameters
+    // if (action) {
+    //   whereClause += ` AND LOWER(a.action) LIKE $${paramIndex}`;
+    //   params.push(`%${action.toUpperCase()}%`);
+    //   paramIndex++;
+    // }
+    // if (action) {
+    //   const actions = action.split(',').map(s => s.trim().toUpperCase());
+    //   whereClause += ` AND a.action = ANY($${paramIndex})`;
+    //   params.push(actions);
+    //   paramIndex++;
+    // }
     if (action) {
-      whereClause += ` AND LOWER(a.action) LIKE $${paramIndex}`;
-      params.push(`%${action.toUpperCase()}%`);
+      whereClause += ` AND EXISTS (
+        SELECT 1 FROM unnest(string_to_array($${paramIndex}, ',')) AS act(action) 
+        WHERE a.action ILIKE '%' || trim(act.action) || '%'
+      )`;
+      params.push(action.toUpperCase());
       paramIndex++;
     }
     if (userId) {
-      whereClause += ` AND a.user_id = $${paramIndex}`;
+      whereClause += ` AND a.userid = $${paramIndex}`;
       params.push(userId);
       paramIndex++;
     }
@@ -44,7 +58,7 @@ router.get('/',
       paramIndex++;
     }
     if (search) {
-      whereClause += ` AND (a.details LIKE $${paramIndex} OR u.first_name LIKE $${paramIndex + 1} OR u.last_name LIKE $${paramIndex + 2})`;
+      whereClause += ` AND (a.details LIKE $${paramIndex} OR u.firstname LIKE $${paramIndex + 1} OR u.lastname LIKE $${paramIndex + 2})`;
       const pattern = `%${search}%`;
       params.push(pattern, pattern, pattern);
       paramIndex += 3;
@@ -69,17 +83,17 @@ router.get('/',
     const auditQuery = `
       SELECT 
         a.*,
-        u.first_name AS "userFirstName",
-        u.last_name AS "userLastName",
+        u.firstname AS "userFirstName",
+        u.lastname AS "userLastName",
         u.email AS "userEmail",
         CASE
-          WHEN u.first_name IS NOT NULL AND u.last_name IS NOT NULL THEN u.first_name || ' ' || u.last_name
-          WHEN u.first_name IS NOT NULL THEN u.first_name
+          WHEN u.firstname IS NOT NULL AND u.lastname IS NOT NULL THEN u.firstname || ' ' || u.lastname
+          WHEN u.firstname IS NOT NULL THEN u.firstname
           WHEN u.email IS NOT NULL THEN u.email
           ELSE 'Unknown User'
         END AS "userFullName"
       FROM audit_logs a
-      LEFT JOIN users u ON a.user_id = u.id
+      LEFT JOIN users u ON a.userid = u.id
       ${whereClause}
       ORDER BY a.timestamp DESC
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
@@ -136,11 +150,11 @@ router.get('/stats',
     const recentResult = await db.query(`
       SELECT 
         a.*,
-        u.first_name AS "userFirstName",
-        u.last_name AS "userLastName",
+        u.firstname AS "userFirstName",
+        u.lastname AS "userLastName",
         u.email AS "userEmail"
       FROM audit_logs a
-      LEFT JOIN users u ON a.user_id = u.id
+      LEFT JOIN users u ON a.userid = u.id
       ORDER BY a.timestamp DESC
       LIMIT 10
     `);
@@ -161,14 +175,14 @@ router.get('/stats',
     // User activity stats
     const userResult = await db.query(`
       SELECT 
-        u.first_name,
-        u.last_name,
+        u.firstname,
+        u.lastname,
         u.email,
         COUNT(a.id) AS "actionCount"
       FROM users u
-      LEFT JOIN audit_logs a ON u.id = a.user_id
-      WHERE u.is_active = TRUE
-      GROUP BY u.id, u.first_name, u.last_name, u.email
+      LEFT JOIN audit_logs a ON u.id = a.userid
+      WHERE u.isActive = TRUE
+      GROUP BY u.id, u.firstname, u.lastname, u.email
       ORDER BY "actionCount" DESC
       LIMIT 10
     `);

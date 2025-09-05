@@ -20,7 +20,8 @@ router.post('/login',
     const db = getDatabase();
 
     // Find user by email
-    const userResult = await db.query('SELECT * FROM users WHERE email = $1 AND is_active = TRUE', [email]);
+    const userResult = await db.query('SELECT * FROM users WHERE email = $1 AND "isActive" = $2', [email, true]);
+
     const user = userResult.rows[0];
 
     if (!user) {
@@ -57,7 +58,7 @@ router.post('/login',
 
     // Log successful login
     await db.query(
-      'INSERT INTO audit_logs (id, action, user_id, entity, entity_id, details) VALUES ($1, $2, $3, $4, $5, $6)',
+      'INSERT INTO audit_logs (id, action, userid, entity, entityid, details) VALUES ($1, $2, $3, $4, $5, $6)',
       [uuidv4(), 'LOGIN', user.id, 'USER', user.id, `User logged in from ${req.ip}`]
     );
 
@@ -70,8 +71,8 @@ router.post('/login',
       user: {
         id: user.id,
         email: user.email,
-        firstName: user.first_name,  // ✅ FIXED: Using snake_case from DB
-        lastName: user.last_name,    // ✅ FIXED: Using snake_case from DB
+        firstName: user.firstname,  // ✅ FIXED: Using snake_case from DB
+        lastName: user.lastname,    // ✅ FIXED: Using snake_case from DB
         role: user.role
       }
     });
@@ -102,13 +103,13 @@ router.post('/register', authenticateToken, validate('userRegistration'), asyncH
   // Create new user
   const userId = uuidv4();
   await db.query(
-    'INSERT INTO users (id, email, password, first_name, last_name, role, is_active) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+    'INSERT INTO users (id, email, password, firstname, lastname, role, "isActive") VALUES ($1, $2, $3, $4, $5, $6, $7)',
     [userId, email, hashedPassword, firstName, lastName, role, true]
   );
 
   // ✅ FIXED: Log user creation with PostgreSQL
   await db.query(
-    'INSERT INTO audit_logs (id, action, user_id, entity, entity_id, details) VALUES ($1, $2, $3, $4, $5, $6)',
+    'INSERT INTO audit_logs (id, action, userid, entity, entityid, details) VALUES ($1, $2, $3, $4, $5, $6)',
     [uuidv4(), 'CREATE_USER', req.user.userId, 'USER', userId, `Created new user: ${email} with role: ${role}`]
   );
 
@@ -130,11 +131,11 @@ router.post('/register', authenticateToken, validate('userRegistration'), asyncH
 // ✅ FIXED: Get current user profile
 router.get('/me', authenticateToken, asyncHandler(async (req, res) => {
   const db = getDatabase();
-  
+
   const userResult = await db.query(`
-    SELECT id, email, first_name AS "firstName", last_name AS "lastName", 
-           role, is_active AS "isActive", created_at AS "createdAt", 
-           updated_at AS "updatedAt"
+    SELECT id, email, firstname AS "firstName", lastname AS "lastName", 
+           role, "isActive" AS "isActive", createdat AS "createdAt", 
+           updatedat AS "updatedAt"
     FROM users 
     WHERE id = $1
   `, [req.user.userId]);
@@ -157,7 +158,7 @@ router.post('/logout', authenticateToken, asyncHandler(async (req, res) => {
   
   // Log logout
   await db.query(
-    'INSERT INTO audit_logs (id, action, user_id, entity, entity_id, details) VALUES ($1, $2, $3, $4, $5, $6)',
+    'INSERT INTO audit_logs (id, action, userid, entity, entityid, details) VALUES ($1, $2, $3, $4, $5, $6)',
     [uuidv4(), 'LOGOUT', req.user.userId, 'USER', req.user.userId, `User logged out from ${req.ip}`]
   );
 

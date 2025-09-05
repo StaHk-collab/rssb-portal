@@ -71,7 +71,7 @@ router.get('/',
     
     // Build WHERE clause for filtering with proper PostgreSQL parameters
     if (search) {
-      whereClause += ` AND (s.first_name LIKE $${paramIndex} OR s.last_name LIKE $${paramIndex + 1} OR s.verification_id LIKE $${paramIndex + 2})`;
+      whereClause += ` AND (s.firstname LIKE $${paramIndex} OR s.lastname LIKE $${paramIndex + 1} OR s.verificationid LIKE $${paramIndex + 2})`;
       const searchPattern = `%${search}%`;
       params.push(searchPattern, searchPattern, searchPattern);
       paramIndex += 3;
@@ -86,14 +86,14 @@ router.get('/',
       }
       
       if (statusValue !== undefined) {
-        whereClause += ` AND s.naamdan_status = $${paramIndex}`;
+        whereClause += ` AND s.naamdanstatus = $${paramIndex}`;
         params.push(statusValue);
         paramIndex++;
       }
     }
     
     if (verificationType) {
-      whereClause += ` AND s.verification_type = $${paramIndex}`;
+      whereClause += ` AND s.verificationtype = $${paramIndex}`;
       params.push(verificationType);
       paramIndex++;
     }
@@ -111,22 +111,22 @@ router.get('/',
     const sewadarsQuery = `
       SELECT 
         s.*,
-        s.first_name AS "firstName",
-        s.last_name AS "lastName",
-        s.verification_id AS "verificationId",
-        s.verification_type AS "verificationType",
-        s.naamdan_status AS "naamdanStatus",
-        s.naamdan_id AS "naamdanId",
-        s.badge_id AS "badgeId",
-        s.created_by AS "createdBy",
-        s.created_at AS "createdAt",
-        s.updated_at AS "updatedAt",
-        u.first_name AS "createdByFirstName",
-        u.last_name AS "createdByLastName"
+        s.firstname AS "firstName",
+        s.lastname AS "lastName",
+        s.verificationid AS "verificationId",
+        s.verificationtype AS "verificationType",
+        s.naamdanstatus AS "naamdanStatus",
+        s.naamdanid AS "naamdanId",
+        s.badgeid AS "badgeId",
+        s.createdby AS "createdBy",
+        s.createdat AS "createdAt",
+        s.updatedat AS "updatedAt",
+        u.firstname AS "createdByFirstName",
+        u.lastname AS "createdByLastName"
       FROM sewadars s
-      LEFT JOIN users u ON s.created_by = u.id
+      LEFT JOIN users u ON s.createdby = u.id
       ${whereClause}
-      ORDER BY s.created_at DESC
+      ORDER BY s.createdat DESC
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
     
@@ -164,21 +164,21 @@ router.get('/export',
       const sewadarsResult = await db.query(`
         SELECT 
           s.id,
-          s.first_name AS "firstName",
-          s.last_name AS "lastName",
+          s.firstname AS "firstName",
+          s.lastname AS "lastName",
           s.age,
-          s.verification_id AS "verificationId",
-          s.verification_type AS "verificationType",
-          s.naamdan_status AS "naamdanStatus",
-          s.naamdan_id AS "naamdanId",
-          s.badge_id AS "badgeId",
-          s.created_at AS "createdAt",
-          s.updated_at AS "updatedAt",
-          u.first_name AS "createdByFirstName",
-          u.last_name AS "createdByLastName"
+          s.verificationid AS "verificationId",
+          s.verificationtype AS "verificationType",
+          s.naamdanstatus AS "naamdanStatus",
+          s.naamdanid AS "naamdanId",
+          s.badgeid AS "badgeId",
+          s.createdat AS "createdAt",
+          s.updatedat AS "updatedAt",
+          u.firstname AS "createdByFirstName",
+          u.lastname AS "createdByLastName"
         FROM sewadars s
-        LEFT JOIN users u ON s.created_by = u.id
-        ORDER BY s.created_at DESC
+        LEFT JOIN users u ON s.createdby = u.id
+        ORDER BY s.createdat DESC
       `);
       const sewadars = sewadarsResult.rows;
       
@@ -248,21 +248,21 @@ router.get('/:id',
     const sewadarResult = await db.query(`
       SELECT 
         s.*,
-        s.first_name AS "firstName",
-        s.last_name AS "lastName",
-        s.verification_id AS "verificationId",
-        s.verification_type AS "verificationType",
-        s.naamdan_status AS "naamdanStatus",
-        s.naamdan_id AS "naamdanId",
-        s.badge_id AS "badgeId",
-        s.created_by AS "createdBy",
-        s.created_at AS "createdAt",
-        s.updated_at AS "updatedAt",
-        u.first_name AS "createdByFirstName",
-        u.last_name AS "createdByLastName",
+        s.firstname AS "firstName",
+        s.lastname AS "lastName",
+        s.verificationid AS "verificationId",
+        s.verificationtype AS "verificationType",
+        s.naamdanstatus AS "naamdanStatus",
+        s.naamdanid AS "naamdanId",
+        s.badgeid AS "badgeId",
+        s.createdby AS "createdBy",
+        s.createdat AS "createdAt",
+        s.updatedat AS "updatedAt",
+        u.firstname AS "createdByFirstName",
+        u.lastname AS "createdByLastName",
         u.email AS "createdByEmail"
       FROM sewadars s
-      LEFT JOIN users u ON s.created_by = u.id
+      LEFT JOIN users u ON s.createdby = u.id
       WHERE s.id = $1
     `, [id]);
     
@@ -327,8 +327,8 @@ router.post('/',
     // Insert new sewadar
     await db.query(`
       INSERT INTO sewadars (
-        id, first_name, last_name, age, verification_id, verification_type,
-        naamdan_status, naamdan_id, badge_id, created_by
+        id, firstname, lastname, age, verificationid, verificationtype,
+        naamdanstatus, naamdanid, badgeid, createdby
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
     `, [
       cleanData.id,
@@ -345,7 +345,7 @@ router.post('/',
     
     // Log the creation
     await db.query(`
-      INSERT INTO audit_logs (id, action, user_id, entity, entity_id, details)
+      INSERT INTO audit_logs (id, action, userid, entity, entityid, details)
       VALUES ($1, $2, $3, $4, $5, $6)
     `, [
       uuidv4(), 
@@ -360,20 +360,20 @@ router.post('/',
     const createdResult = await db.query(`
       SELECT 
         s.*,
-        s.first_name AS "firstName",
-        s.last_name AS "lastName",
-        s.verification_id AS "verificationId",
-        s.verification_type AS "verificationType",
-        s.naamdan_status AS "naamdanStatus",
-        s.naamdan_id AS "naamdanId",
-        s.badge_id AS "badgeId",
-        s.created_by AS "createdBy",
-        s.created_at AS "createdAt",
-        s.updated_at AS "updatedAt",
-        u.first_name AS "createdByFirstName",
-        u.last_name AS "createdByLastName"
+        s.firstname AS "firstName",
+        s.lastname AS "lastName",
+        s.verificationid AS "verificationId",
+        s.verificationtype AS "verificationType",
+        s.naamdanstatus AS "naamdanStatus",
+        s.naamdanid AS "naamdanId",
+        s.badgeid AS "badgeId",
+        s.createdby AS "createdBy",
+        s.createdat AS "createdAt",
+        s.updatedat AS "updatedAt",
+        u.firstname AS "createdByFirstName",
+        u.lastname AS "createdByLastName"
       FROM sewadars s
-      LEFT JOIN users u ON s.created_by = u.id
+      LEFT JOIN users u ON s.createdby = u.id
       WHERE s.id = $1
     `, [sewadarId]);
     
@@ -417,14 +417,14 @@ router.put('/:id',
     
     // Map camelCase to snake_case and handle data type conversions
     const fieldMap = {
-      firstName: 'first_name',
-      lastName: 'last_name',
+      firstName: 'firstname',
+      lastName: 'lastname',
       age: 'age',
-      verificationId: 'verification_id',
-      verificationType: 'verification_type',
-      naamdanStatus: 'naamdan_status',
-      naamdanId: 'naamdan_id',
-      badgeId: 'badge_id'
+      verificationId: 'verificationid',
+      verificationType: 'verificationtype',
+      naamdanStatus: 'naamdanstatus',
+      naamdanId: 'naamdanid',
+      badgeId: 'badgeid'
     };
     
     Object.keys(req.body).forEach(key => {
@@ -452,7 +452,7 @@ router.put('/:id',
     }
     
     // Add updatedAt timestamp and id parameter
-    updates.push(`updated_at = NOW()`);
+    updates.push(`updatedat = NOW()`);
     values.push(id);
     
     const updateQuery = `
@@ -465,7 +465,7 @@ router.put('/:id',
     
     // Log the update
     await db.query(`
-      INSERT INTO audit_logs (id, action, user_id, entity, entity_id, details)
+      INSERT INTO audit_logs (id, action, userid, entity, entityid, details)
       VALUES ($1, $2, $3, $4, $5, $6)
     `, [
       uuidv4(), 
@@ -473,27 +473,27 @@ router.put('/:id',
       req.user.userId, 
       'SEWADAR', 
       id,
-      `Updated sewadar: ${existingSewadar.first_name} ${existingSewadar.last_name}`
+      `Updated sewadar: ${existingSewadar.firstname} ${existingSewadar.lastname}`
     ]);
     
     // Fetch updated sewadar
     const updatedResult = await db.query(`
       SELECT 
         s.*,
-        s.first_name AS "firstName",
-        s.last_name AS "lastName",
-        s.verification_id AS "verificationId",
-        s.verification_type AS "verificationType",
-        s.naamdan_status AS "naamdanStatus",
-        s.naamdan_id AS "naamdanId",
-        s.badge_id AS "badgeId",
-        s.created_by AS "createdBy",
-        s.created_at AS "createdAt",
-        s.updated_at AS "updatedAt",
-        u.first_name AS "createdByFirstName",
-        u.last_name AS "createdByLastName"
+        s.firstname AS "firstName",
+        s.lastname AS "lastName",
+        s.verificationid AS "verificationId",
+        s.verificationtype AS "verificationType",
+        s.naamdanstatus AS "naamdanStatus",
+        s.naamdanid AS "naamdanId",
+        s.badgeid AS "badgeId",
+        s.createdby AS "createdBy",
+        s.createdat AS "createdAt",
+        s.updatedat AS "updatedAt",
+        u.firstname AS "createdByFirstName",
+        u.lastname AS "createdByLastName"
       FROM sewadars s
-      LEFT JOIN users u ON s.created_by = u.id
+      LEFT JOIN users u ON s.createdby = u.id
       WHERE s.id = $1
     `, [id]);
     
@@ -533,7 +533,7 @@ router.delete('/:id',
     
     // Log the deletion
     await db.query(`
-      INSERT INTO audit_logs (id, action, user_id, entity, entity_id, details)
+      INSERT INTO audit_logs (id, action, userid, entity, entityid, details)
       VALUES ($1, $2, $3, $4, $5, $6)
     `, [
       uuidv4(), 
@@ -541,7 +541,7 @@ router.delete('/:id',
       req.user.userId, 
       'SEWADAR', 
       id,
-      `Deleted sewadar: ${existingSewadar.first_name} ${existingSewadar.last_name}`
+      `Deleted sewadar: ${existingSewadar.firstname} ${existingSewadar.lastname}`
     ]);
     
     res.json({
@@ -567,32 +567,32 @@ router.get('/stats/summary',
     const total = parseInt(totalResult.rows[0].count, 10);
     
     // Get naamdan complete count
-    const completedResult = await db.query('SELECT COUNT(*) as count FROM sewadars WHERE naamdan_status = TRUE');
+    const completedResult = await db.query('SELECT COUNT(*) as count FROM sewadars WHERE naamdanstatus = TRUE');
     const naamdanStatus = parseInt(completedResult.rows[0].count, 10);
     
     // Get naamdan pending count
-    const pendingResult = await db.query('SELECT COUNT(*) as count FROM sewadars WHERE naamdan_status = FALSE');
+    const pendingResult = await db.query('SELECT COUNT(*) as count FROM sewadars WHERE naamdanstatus = FALSE');
     const naamdanPending = parseInt(pendingResult.rows[0].count, 10);
     
     // Get recently added count
     const recentResult = await db.query(`
       SELECT COUNT(*) as count 
       FROM sewadars 
-      WHERE created_at >= NOW() - INTERVAL '30 days'
+      WHERE createdat >= NOW() - INTERVAL '30 days'
     `);
     const recentlyAdded = parseInt(recentResult.rows[0].count, 10);
     
     // Get verification type breakdown
     const verificationResult = await db.query(`
-      SELECT verification_type, COUNT(*) as count 
+      SELECT verificationtype, COUNT(*) as count 
       FROM sewadars 
-      WHERE verification_type IS NOT NULL 
-      GROUP BY verification_type
+      WHERE verificationtype IS NOT NULL 
+      GROUP BY verificationtype
     `);
     
     const byVerificationType = {};
     verificationResult.rows.forEach(row => {
-      byVerificationType[row.verification_type] = parseInt(row.count, 10);
+      byVerificationType[row.verificationtype] = parseInt(row.count, 10);
     });
     
     const stats = {

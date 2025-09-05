@@ -66,7 +66,7 @@ const authenticateToken = (req, res, next) => {
     // Verify user still exists and is active
     const db = getDatabase();
     
-    const userResult = await db.query('SELECT * FROM users WHERE id = $1 AND is_active = TRUE', [user.userId]);
+    const userResult = await db.query('SELECT * FROM users WHERE id = $1 AND "isActive" = $2', [user.userId, true]);
     const dbUser = userResult.rows[0];
 
     if (!dbUser) {
@@ -81,8 +81,8 @@ const authenticateToken = (req, res, next) => {
       userId: user.userId,
       email: user.email,
       role: user.role,
-      firstName: dbUser.firstName,
-      lastName: dbUser.lastName
+      firstName: dbUser.firstname,
+      lastName: dbUser.lastname
     };
     
     next();

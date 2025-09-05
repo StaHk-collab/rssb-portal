@@ -32,14 +32,14 @@ router.get('/',
       SELECT 
         id, 
         email, 
-        first_name AS "firstName", 
-        last_name AS "lastName", 
+        firstname AS "firstName", 
+        lastname AS "lastName", 
         role, 
-        is_active AS "isActive", 
-        created_at AS "createdAt", 
-        updated_at AS "updatedAt"
+        "isActive" AS "isActive", 
+        createdat AS "createdAt", 
+        updatedat AS "updatedAt"
       FROM users
-      ORDER BY created_at DESC
+      ORDER BY createdat DESC
     `);
     
     const users = usersResult.rows;
@@ -82,12 +82,12 @@ router.get('/:id',
       SELECT 
         id, 
         email, 
-        first_name AS "firstName", 
-        last_name AS "lastName", 
+        firstname AS "firstName", 
+        lastname AS "lastName", 
         role, 
-        is_active AS "isActive", 
-        created_at AS "createdAt", 
-        updated_at AS "updatedAt"
+        "isActive" AS "isActive", 
+        createdat AS "createdAt", 
+        updatedat AS "updatedAt"
       FROM users 
       WHERE id = $1
     `, [id]);
@@ -102,7 +102,7 @@ router.get('/:id',
     const statsResult = await db.query(`
       SELECT COUNT(*) AS "sewadarsCreated"
       FROM sewadars
-      WHERE created_by = $1
+      WHERE createdby = $1
     `, [id]);
     
     const stats = statsResult.rows[0];
@@ -176,10 +176,10 @@ router.put('/:id',
     
     // Build dynamic update query with field mapping
     const fieldMap = {
-      firstName: 'first_name',
-      lastName: 'last_name',
+      firstName: 'firstname',
+      lastName: 'lastname',
       role: 'role',
-      isActive: 'is_active'
+      isActive: '"isActive"'
     };
     
     const updates = [];
@@ -200,7 +200,7 @@ router.put('/:id',
     }
     
     // Add updatedAt timestamp and id parameter
-    updates.push(`updated_at = NOW()`);
+    updates.push(`updatedat = NOW()`);
     values.push(id);
     
     const updateQuery = `
@@ -213,7 +213,7 @@ router.put('/:id',
     
     // Log the update
     await db.query(`
-      INSERT INTO audit_logs (id, action, user_id, entity, entity_id, details)
+      INSERT INTO audit_logs (id, action, userid, entity, entityid, details)
       VALUES ($1, $2, $3, $4, $5, $6)
     `, [
       uuidv4(), 
@@ -229,12 +229,12 @@ router.put('/:id',
       SELECT 
         id, 
         email, 
-        first_name AS "firstName", 
-        last_name AS "lastName", 
+        firstname AS "firstName", 
+        lastname AS "lastName", 
         role, 
-        is_active AS "isActive", 
-        created_at AS "createdAt", 
-        updated_at AS "updatedAt"
+        "isActive" AS "isActive", 
+        createdat AS "createdAt", 
+        updatedat AS "updatedAt"
       FROM users 
       WHERE id = $1
     `, [id]);
@@ -306,13 +306,13 @@ router.post('/:id/reset-password',
     
     // Update password
     await db.query(
-      'UPDATE users SET password = $1, updated_at = NOW() WHERE id = $2',
+      'UPDATE users SET password = $1, updatedat = NOW() WHERE id = $2',
       [hashedPassword, id]
     );
     
     // Log the password reset
     await db.query(`
-      INSERT INTO audit_logs (id, action, user_id, entity, entity_id, details)
+      INSERT INTO audit_logs (id, action, userid, entity, entityid, details)
       VALUES ($1, $2, $3, $4, $5, $6)
     `, [
       uuidv4(), 
@@ -374,7 +374,7 @@ router.delete('/:id',
     
     // Check if user has created sewadars
     const sewadarCountResult = await db.query(
-      'SELECT COUNT(*) as count FROM sewadars WHERE created_by = $1', 
+      'SELECT COUNT(*) as count FROM sewadars WHERE createdby = $1', 
       [id]
     );
     const sewadarCount = sewadarCountResult.rows[0];
@@ -391,7 +391,7 @@ router.delete('/:id',
     
     // Log the deletion
     await db.query(`
-      INSERT INTO audit_logs (id, action, user_id, entity, entity_id, details)
+      INSERT INTO audit_logs (id, action, userid, entity, entityid, details)
       VALUES ($1, $2, $3, $4, $5, $6)
     `, [
       uuidv4(), 
