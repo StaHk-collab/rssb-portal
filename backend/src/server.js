@@ -30,7 +30,7 @@ const swaggerOptions = {
     servers: [
       {
         url: process.env.NODE_ENV === 'production' 
-          ? 'https://your-app-domain.com/api'
+          ? 'https://rssb-portal-production.up.railway.app/api'
           : `http://localhost:${PORT}/api`,
         description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
       },
@@ -71,7 +71,8 @@ app.use('/api/', limiter);
 const corsOptions = {
   origin: [
     'http://localhost:3000', // Local development
-    'https://rssb-sewadar.netlify.app' // Your Netlify URL
+    'https://rssb-sewadar.netlify.app', // Your Netlify URL
+    'https://rssb-portal-production.up.railway.app' // Railway backend
   ],
   credentials: true,
    allowedHeaders: [
