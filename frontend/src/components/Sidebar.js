@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
-const Sidebar = ({ isOpen, onClose }) => {
+const Sidebar = ({ isOpen, onClose, className = '' }) => {
   const { user, hasRole } = useAuth();
   const location = useLocation();
 
@@ -88,9 +88,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div className={`h-full w-64 transform transition-all duration-300 ease-in-out ${
-      isOpen ? 'translate-x-0' : '-translate-x-full'
-    } lg:translate-x-0 bg-white shadow-xl flex flex-col`}>
+    <div className={`h-full w-64 bg-white shadow-xl flex flex-col ${className}`}>
       
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b border-gray-200/50">

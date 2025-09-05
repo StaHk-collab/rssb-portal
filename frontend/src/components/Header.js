@@ -90,9 +90,18 @@ const Header = ({ onMenuClick, user }) => {
             
             {/* User Menu */}
             <div className="relative" ref={userMenuRef}>
-              <button
+              {/* <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
                 className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-100 transition-all duration-200 hover:scale-[1.02]"
+              > */}
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                onTouchStart={() => setUserMenuOpen(!userMenuOpen)} // Add touch support
+                className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-100 transition-all duration-200 hover:scale-[1.02] cursor-pointer"
+                style={{ 
+                  touchAction: 'manipulation',
+                  WebkitTapHighlightColor: 'transparent'
+                }}
               >
                 <div className="w-8 h-8 bg-gradient-to-br from-red-600 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
                   {user?.firstName?.[0]}{user?.lastName?.[0]}
@@ -117,18 +126,36 @@ const Header = ({ onMenuClick, user }) => {
                   </div>
 
                   <div className="py-2">
-                    <Link
+                    {/* <Link
                       to="/profile"
                       className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
                       onClick={() => setUserMenuOpen(false)}
+                    > */}
+                    <Link
+                      to="/profile"
+                      className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => setUserMenuOpen(false)}
+                      style={{ 
+                        touchAction: 'manipulation',
+                        WebkitTapHighlightColor: 'transparent'
+                      }}
                     >
                       <User className="h-4 w-4 mr-3" />
                       Profile
                     </Link>
-                    <Link
+                    {/* <Link
                       to="/settings"
                       className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
                       onClick={() => setUserMenuOpen(false)}
+                    > */}
+                    <Link
+                      to="/settings"
+                      className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => setUserMenuOpen(false)}
+                      style={{ 
+                        touchAction: 'manipulation',
+                        WebkitTapHighlightColor: 'transparent'
+                      }}
                     >
                       <Settings className="h-4 w-4 mr-3" />
                       Settings
@@ -136,9 +163,17 @@ const Header = ({ onMenuClick, user }) => {
                   </div>
 
                   <div className="border-t border-gray-100 py-2">
-                    <button
+                    {/* <button
                       onClick={handleLogout}
                       className="flex items-center w-full px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
+                    > */}
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center w-full px-4 py-2 text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                      style={{ 
+                        touchAction: 'manipulation',
+                        WebkitTapHighlightColor: 'transparent'
+                      }}
                     >
                       <LogOut className="h-4 w-4 mr-3" />
                       Sign out

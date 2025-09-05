@@ -40,7 +40,16 @@ const Layout = () => {
 
       <div className="flex flex-1">
         {/* Sidebar - Fixed positioning */}
-        <div className="fixed inset-y-0 left-0 z-50 w-64">
+        {/* <div className="fixed inset-y-0 left-0 z-50 w-64">
+          <Sidebar 
+            isOpen={sidebarOpen} 
+            onClose={closeSidebar}
+            currentPath={location.pathname}
+          />
+        </div> */}
+        <div className={`fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}>
           <Sidebar 
             isOpen={sidebarOpen} 
             onClose={closeSidebar}
