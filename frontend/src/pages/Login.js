@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { Eye, EyeOff, Heart, AlertCircle, ArrowRight, Shield, Users, BarChart3 } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, ArrowRight, Shield, Users, BarChart3 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import toast from 'react-hot-toast';
 import NamaskarLogo from '../namaskaar.png';
@@ -160,8 +160,12 @@ const Login = () => {
         <div className="w-full max-w-md mx-auto">
           
           <div className="lg:hidden text-center mb-8 animate-fade-in">
-            <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-red-600 to-blue-600 rounded-2xl flex items-center justify-center">
-              <Heart className="w-10 h-10 text-white" fill="currentColor" />
+            <div className="w-16 h-16 mx-auto mt-8 mb-4 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+              <img 
+                src={NamaskarLogo} 
+                alt="Namaskar" 
+                className="w-10 h-10 object-contain"
+              />
             </div>
             <h1 className="text-2xl font-bold text-gray-900">RSSB Sewadar Portal</h1>
             <p className="text-gray-600 mt-2">Sign in to your account</p>

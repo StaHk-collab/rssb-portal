@@ -125,19 +125,19 @@ const SewadarList = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between">
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center space-x-3">
-            <User style={{ color: semanticColors.primary.main }} className="h-8 w-8" />
+            <User style={{ color: semanticColors.primary.main }} className="h-6 w-6 sm:h-8 sm:w-8" />
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Sewadar Management</h1>
-              <p className="text-gray-600">Manage volunteer records and information</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Sewadar Management</h1>
+              <p className="text-sm sm:text-base text-gray-600">Manage volunteer records and information</p>
             </div>
           </div>
           {canEdit() && (
             <Link
               to="/sewadars/new"
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-white font-medium hover:opacity-90 transition-opacity"
+              className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-white font-medium hover:opacity-90 transition-opacity"
               style={{ backgroundColor: semanticColors.primary.main }}
             >
               <Plus className="h-5 w-5 mr-2" />
@@ -148,9 +148,8 @@ const SewadarList = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {/* Robust search input: updates local state only */}
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             <input
@@ -158,13 +157,13 @@ const SewadarList = () => {
               placeholder="Search by name..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
             />
           </div>
           <select
             value={filters.naamdanStatus}
             onChange={(e) => handleFilterChange('naamdanStatus', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
           >
             <option value="">All Naamdan Status</option>
             <option value="true">Complete</option>
@@ -173,7 +172,7 @@ const SewadarList = () => {
           <select
             value={filters.verificationType}
             onChange={(e) => handleFilterChange('verificationType', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
           >
             <option value="">All Verification Types</option>
             <option value="AADHAR">Aadhar Card</option>
@@ -184,16 +183,16 @@ const SewadarList = () => {
           <button
             onClick={handleExportSewadars}
             disabled={exporting}
-            className="btn btn-outline flex items-center gap-2"
+            className="btn btn-outline flex items-center justify-center gap-2 w-full"
           >
             {exporting ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
                 Exporting...
               </>
-              ) : (
+            ) : (
               <>
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="h-4 w-4" />
                 Export Data
               </>
             )}
@@ -204,117 +203,128 @@ const SewadarList = () => {
       {/* Sewadars List */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Age
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Verification
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Naamdan Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Badge ID
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Created
-                </th>
-                {canEdit() && (
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
+          <div className="min-w-full">
+            <table className="w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Name
                   </th>
-                )}
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {sewadars.map((sewadar) => (
-                <tr key={sewadar.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10">
-                        <div
-                          className="h-10 w-10 rounded-full flex items-center justify-center text-white font-medium"
-                          style={{ backgroundColor: semanticColors.primary.main }}
-                        >
-                          {sewadar.firstName?.charAt(0)}{sewadar.lastName?.charAt(0)}
-                        </div>
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">
-                          {sewadar.firstName} {sewadar.lastName}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {sewadar.age || 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
-                      style={{
-                        backgroundColor: colorUtils.withOpacity(colorUtils.getVerificationColor(sewadar.verificationType), 0.1),
-                        color: colorUtils.getVerificationColor(sewadar.verificationType)
-                      }}
-                    >
-                      {sewadar.verificationType}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${
-                      sewadar.naamdanStatus
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {sewadar.naamdanStatus ? (
-                        <>
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Complete
-                        </>
-                      ) : (
-                        <>
-                          <Clock className="h-3 w-3 mr-1" />
-                          Pending
-                        </>
-                      )}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {sewadar.badgeId || 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(sewadar.createdAt).toLocaleDateString()}
-                  </td>
+                  <th className="hidden sm:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Age
+                  </th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Verification
+                  </th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Badge ID
+                  </th>
+                  <th className="hidden lg:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Created
+                  </th>
                   {canEdit() && (
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end space-x-2">
-                        <Link
-                          to={`/sewadars/${sewadar.id}/edit`}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          <Edit3 className="h-4 w-4" />
-                        </Link>
-                        {isAdmin() && (
-                          <button
-                            onClick={() => setDeleteModal({ show: true, sewadar })}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
+                    <th className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   )}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {sewadars.map((sewadar) => (
+                  <tr key={sewadar.id} className="hover:bg-gray-50">
+                    <td className="px-3 sm:px-6 py-4">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10">
+                          <div
+                            className="h-8 w-8 sm:h-10 sm:w-10 rounded-full flex items-center justify-center text-white font-medium text-xs sm:text-sm"
+                            style={{ backgroundColor: semanticColors.primary.main }}
+                          >
+                            {sewadar.firstName?.charAt(0)}{sewadar.lastName?.charAt(0)}
+                          </div>
+                        </div>
+                        <div className="ml-3 sm:ml-4">
+                          <div className="text-sm font-medium text-gray-900">
+                            {sewadar.firstName} {sewadar.lastName}
+                          </div>
+                          <div className="sm:hidden text-xs text-gray-500">Age: {sewadar.age || 'N/A'}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="hidden sm:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {sewadar.age || 'N/A'}
+                    </td>
+                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                      <span
+                        className="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
+                        style={{
+                          backgroundColor: colorUtils.withOpacity(colorUtils.getVerificationColor(sewadar.verificationType), 0.1),
+                          color: colorUtils.getVerificationColor(sewadar.verificationType)
+                        }}
+                      >
+                        {sewadar.verificationType}
+                      </span>
+                    </td>
+                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${
+                        sewadar.naamdanStatus
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {sewadar.naamdanStatus ? (
+                          <>
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Complete
+                          </>
+                        ) : (
+                          <>
+                            <Clock className="h-3 w-3 mr-1" />
+                            Pending
+                          </>
+                        )}
+                      </span>
+                    </td>
+                    <td className="hidden md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {sewadar.badgeId || 'N/A'}
+                    </td>
+                    <td className="hidden lg:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(sewadar.createdAt).toLocaleDateString()}
+                    </td>
+                    {canEdit() && (
+                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex items-center justify-end space-x-2">
+                          <Link
+                            to={`/sewadars/${sewadar.id}/edit`}
+                            className="text-blue-600 hover:text-blue-900 p-1"
+                            style={{ 
+                              touchAction: 'manipulation',
+                              WebkitTapHighlightColor: 'transparent'
+                            }}
+                          >
+                            <Edit3 className="h-4 w-4" />
+                          </Link>
+                          {isAdmin() && (
+                            <button
+                              onClick={() => setDeleteModal({ show: true, sewadar })}
+                              className="text-red-600 hover:text-red-900 p-1"
+                              style={{ 
+                                touchAction: 'manipulation',
+                                WebkitTapHighlightColor: 'transparent'
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Pagination */}

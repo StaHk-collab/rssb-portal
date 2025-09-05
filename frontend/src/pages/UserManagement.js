@@ -95,18 +95,18 @@ const UserManagement = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between">
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center space-x-3">
-            <Users style={{ color: semanticColors.primary.main }} className="h-8 w-8" />
+            <Users style={{ color: semanticColors.primary.main }} className="h-6 w-6 sm:h-8 sm:w-8" />
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
-              <p className="text-gray-600">Manage system users and their permissions</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">User Management</h1>
+              <p className="text-sm sm:text-base text-gray-600">Manage system users and their permissions</p>
             </div>
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-white font-medium hover:opacity-90 transition-opacity"
+            className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-white font-medium hover:opacity-90 transition-opacity"
             style={{ backgroundColor: semanticColors.primary.main }}
           >
             <UserPlus className="h-5 w-5 mr-2" />
@@ -118,81 +118,84 @@ const UserManagement = () => {
       {/* Users List */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  User
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Role
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Created
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {users.map((userItem) => (
-                <tr key={userItem.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10">
-                        <div
-                          className="h-10 w-10 rounded-full flex items-center justify-center text-white font-medium"
-                          style={{ backgroundColor: colorUtils.getRoleColor(userItem.role) }}
-                        >
-                          {userItem.firstName?.charAt(0)}{userItem.lastName?.charAt(0)}
-                        </div>
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">
-                          {userItem.firstName} {userItem.lastName}
-                          {userItem.id === user.id && (
-                            <span className="ml-2 text-xs text-blue-600">(You)</span>
-                          )}
-                        </div>
-                        <div className="text-sm text-gray-500">{userItem.email}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
-                      style={{ 
-                        backgroundColor: colorUtils.withOpacity(colorUtils.getRoleColor(userItem.role), 0.1),
-                        color: colorUtils.getRoleColor(userItem.role)
-                      }}
-                    >
-                      {userItem.role}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      userItem.isActive 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {userItem.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(userItem.createdAt).toLocaleDateString()}
-                  </td>
+          <div className="min-w-full">
+            <table className="w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    User
+                  </th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Role
+                  </th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="hidden sm:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Created
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {users.map((userItem) => (
+                  <tr key={userItem.id} className="hover:bg-gray-50">
+                    <td className="px-3 sm:px-6 py-4">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10">
+                          <div
+                            className="h-8 w-8 sm:h-10 sm:w-10 rounded-full flex items-center justify-center text-white font-medium text-xs sm:text-sm"
+                            style={{ backgroundColor: colorUtils.getRoleColor(userItem.role) }}
+                          >
+                            {userItem.firstName?.charAt(0)}{userItem.lastName?.charAt(0)}
+                          </div>
+                        </div>
+                        <div className="ml-3 sm:ml-4">
+                          <div className="text-sm font-medium text-gray-900">
+                            {userItem.firstName} {userItem.lastName}
+                            {userItem.id === user.id && (
+                              <span className="ml-2 text-xs text-blue-600">(You)</span>
+                            )}
+                          </div>
+                          <div className="text-xs sm:text-sm text-gray-500">{userItem.email}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                      <span
+                        className="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
+                        style={{ 
+                          backgroundColor: colorUtils.withOpacity(colorUtils.getRoleColor(userItem.role), 0.1),
+                          color: colorUtils.getRoleColor(userItem.role)
+                        }}
+                      >
+                        {userItem.role}
+                      </span>
+                    </td>
+                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        userItem.isActive 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {userItem.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="hidden sm:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(userItem.createdAt).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
       {/* Create User Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          {/* <div className="bg-white rounded-lg p-6 w-full max-w-md"> */}
+          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Create New User</h3>
             <form onSubmit={handleCreateUser} className="space-y-4">
               <div>

@@ -92,16 +92,16 @@ const AdminPanel = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between">
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center space-x-3">
-            <Shield style={{ color: semanticColors.primary.main }} className="h-8 w-8" />
+            <Shield style={{ color: semanticColors.primary.main }} className="h-6 w-6 sm:h-8 sm:w-8" />
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Admin Panel</h1>
-              <p className="text-gray-600">Manage users, roles, and system settings</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Admin Panel</h1>
+              <p className="text-sm sm:text-base text-gray-600">Manage users, roles, and system settings</p>
             </div>
           </div>
-          <div className="text-right">
+          <div className="text-center sm:text-right">
             <p className="text-sm text-gray-500">Welcome back, {user?.firstName}</p>
             <p className="text-xs text-gray-400">{new Date().toLocaleDateString()}</p>
           </div>
@@ -110,115 +110,126 @@ const AdminPanel = () => {
 
       {/* Users Management */}
       <div className="bg-white rounded-lg shadow">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center justify-between">
+        <div className="p-4 sm:p-6 border-b border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center space-x-3">
-              <Users className="h-6 w-6 text-gray-700" />
-              <h2 className="text-xl font-semibold text-gray-900">User Management</h2>
+              <Users className="h-5 w-5 sm:h-6 sm:w-6 text-gray-700" />
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900">User Management</h2>
             </div>
-            <span className="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
+            <span className="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full text-center">
               {users.length} users
             </span>
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  User
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Role
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Created
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {users.map((userItem) => (
-                <tr key={userItem.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10">
-                        <div
-                          className="h-10 w-10 rounded-full flex items-center justify-center text-white font-medium"
-                          style={{ backgroundColor: colorUtils.getRoleColor(userItem.role) }}
-                        >
-                          {userItem.firstName?.charAt(0)}{userItem.lastName?.charAt(0)}
-                        </div>
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">
-                          {userItem.firstName} {userItem.lastName}
-                        </div>
-                        <div className="text-sm text-gray-500">{userItem.email}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
-                      style={{ 
-                        backgroundColor: colorUtils.withOpacity(colorUtils.getRoleColor(userItem.role), 0.1),
-                        color: colorUtils.getRoleColor(userItem.role)
-                      }}
-                    >
-                      {userItem.role}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      userItem.isActive 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {userItem.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(userItem.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex items-center justify-end space-x-2">
-                      <button
-                        onClick={() => {
-                          setSelectedUser(userItem);
-                          setShowRoleModal(true);
-                        }}
-                        className="text-blue-600 hover:text-blue-900"
-                        disabled={userItem.id === user.id}
-                      >
-                        <Edit3 className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleToggleStatus(userItem.id, !userItem.isActive)}
-                        className={userItem.isActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}
-                        disabled={userItem.id === user.id}
-                      >
-                        {userItem.isActive ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </td>
+          <div className="min-w-full">
+            <table className="w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    User
+                  </th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Role
+                  </th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="hidden sm:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Created
+                  </th>
+                  <th className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {users.map((userItem) => (
+                  <tr key={userItem.id} className="hover:bg-gray-50">
+                    <td className="px-3 sm:px-6 py-4">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10">
+                          <div
+                            className="h-8 w-8 sm:h-10 sm:w-10 rounded-full flex items-center justify-center text-white font-medium text-xs sm:text-sm"
+                            style={{ backgroundColor: colorUtils.getRoleColor(userItem.role) }}
+                          >
+                            {userItem.firstName?.charAt(0)}{userItem.lastName?.charAt(0)}
+                          </div>
+                        </div>
+                        <div className="ml-3 sm:ml-4">
+                          <div className="text-sm font-medium text-gray-900">
+                            {userItem.firstName} {userItem.lastName}
+                          </div>
+                          <div className="text-xs sm:text-sm text-gray-500">{userItem.email}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                      <span
+                        className="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
+                        style={{ 
+                          backgroundColor: colorUtils.withOpacity(colorUtils.getRoleColor(userItem.role), 0.1),
+                          color: colorUtils.getRoleColor(userItem.role)
+                        }}
+                      >
+                        {userItem.role}
+                      </span>
+                    </td>
+                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        userItem.isActive 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {userItem.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="hidden sm:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(userItem.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end space-x-2">
+                        <button
+                          onClick={() => {
+                            setSelectedUser(userItem);
+                            setShowRoleModal(true);
+                          }}
+                          className="text-blue-600 hover:text-blue-900 p-1"
+                          disabled={userItem.id === user.id}
+                          style={{ 
+                            touchAction: 'manipulation',
+                            WebkitTapHighlightColor: 'transparent'
+                          }}
+                        >
+                          <Edit3 className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleToggleStatus(userItem.id, !userItem.isActive)}
+                          className={`p-1 ${userItem.isActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}`}
+                          disabled={userItem.id === user.id}
+                          style={{ 
+                            touchAction: 'manipulation',
+                            WebkitTapHighlightColor: 'transparent'
+                          }}
+                        >
+                          {userItem.isActive ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
       {/* Role Update Modal */}
       {showRoleModal && selectedUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          {/* <div className="bg-white rounded-lg p-6 w-full max-w-md"> */}
+          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Update Role for {selectedUser.firstName} {selectedUser.lastName}
             </h3>
