@@ -90,8 +90,15 @@ api.interceptors.response.use(
 
       switch (status) {
         case 401:
-          // Unauthorized - clear auth data and redirect to login
-          handleUnauthorized();
+          // Check if this is a password change error - don't logout for these
+          const url = error.config?.url;
+          if (url && url.includes('/change-password')) {
+            // Don't auto-logout for password change errors
+            console.error(data?.message || 'Current password is incorrect');
+          } else {
+            // Auto-logout for other 401 errors (expired tokens, etc.)
+            handleUnauthorized();
+          }
           break;
 
         case 403:

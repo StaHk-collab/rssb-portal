@@ -28,10 +28,10 @@ export const AuthProvider = ({ children }) => {
     const initializeAuth = async () => {
       try {
         const token = authService.getToken();
-        const userData = authService.getUser();
         
-        if (token && userData) {
-          // Verify token is still valid by fetching current user
+        if (token) {
+          setIsLoading(true); // Set loading while fetching user data
+          // Always fetch fresh user data from API
           const currentUser = await authService.getCurrentUser();
           if (currentUser) {
             setUser(currentUser);
@@ -39,11 +39,18 @@ export const AuthProvider = ({ children }) => {
           } else {
             // Token is invalid, clear storage
             authService.logout();
+            setUser(null);
+            setIsAuthenticated(false);
           }
+        } else {
+          setUser(null);
+          setIsAuthenticated(false);
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
         authService.logout();
+        setUser(null);
+        setIsAuthenticated(false);
       } finally {
         setIsLoading(false);
       }
@@ -64,9 +71,11 @@ export const AuthProvider = ({ children }) => {
       const response = await authService.login(email, password);
       
       if (response.success) {
-        setUser(response.user);
+        // Fetch complete user data after login
+        const currentUser = await authService.getCurrentUser();
+        setUser(currentUser || response.user);
         setIsAuthenticated(true);
-        return { success: true, user: response.user };
+        return { success: true, user: currentUser || response.user };
       } else {
         return { success: false, message: response.message };
       }
@@ -168,18 +177,22 @@ export const AuthProvider = ({ children }) => {
    */
   const refreshUser = async () => {
     try {
+      setIsLoading(true);
       const currentUser = await authService.getCurrentUser();
       if (currentUser) {
         setUser(currentUser);
+        setIsAuthenticated(true);
         return { success: true, user: currentUser };
       } else {
-        logout();
+        await logout();
         return { success: false, message: 'User session expired' };
       }
     } catch (error) {
       console.error('Refresh user error:', error);
-      logout();
+      await logout();
       return { success: false, message: 'Failed to refresh user data' };
+    } finally {
+      setIsLoading(false);
     }
   };
 

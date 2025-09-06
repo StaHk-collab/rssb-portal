@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { User, Mail, Calendar, Shield, Lock, Save } from 'lucide-react';
 import { semanticColors, colorUtils } from '../styles/colors';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
+import authService from '../services/auth';
 
 /**
  * User Profile Component
@@ -12,14 +13,15 @@ import toast from 'react-hot-toast';
  * change password, and view account details.
  */
 const Profile = () => {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(false);
 
   const {
     register: registerProfile,
     handleSubmit: handleSubmitProfile,
-    formState: { errors: profileErrors }
+    formState: { errors: profileErrors },
+    reset
   } = useForm({
     defaultValues: {
       firstName: user?.firstName || '',
@@ -27,6 +29,22 @@ const Profile = () => {
       email: user?.email || ''
     }
   });
+
+  // to reset form when user data loads
+  useEffect(() => {
+    if (user) {
+      reset({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || ''
+      });
+    }
+  }, [user, reset]);
+
+  // Add this after your other useEffects for debugging
+  useEffect(() => {
+    console.log('Current user data:', user);
+  }, [user]);
 
   const {
     register: registerPassword,
@@ -44,14 +62,16 @@ const Profile = () => {
   const onUpdateProfile = async (data) => {
     try {
       setLoading(true);
+      console.log('Submitting profile data:', data); // Debug log
       const result = await updateProfile(data);
-      if (result.success) {
+      console.log('Update profile response:', result); // Debug log
+      if (result && result.success) {
         toast.success('Profile updated successfully');
       } else {
-        toast.error(result.message);
+        toast.error(result?.message || 'Failed to update profile');
       }
     } catch (error) {
-      toast.error('Failed to update profile');
+      toast.error('Error updating profile');
       console.error('Profile update error:', error);
     } finally {
       setLoading(false);
@@ -66,25 +86,43 @@ const Profile = () => {
 
     try {
       setLoading(true);
-      // This would be an actual API call
-      // const result = await authService.changePassword(data.currentPassword, data.newPassword);
-      toast.success('Password changed successfully');
-      resetPassword();
+      console.log('Changing password...'); // Debug log
+      
+      // Make actual API call (you'll need to implement this in your auth service)
+      const response = await authService.changePassword(data.currentPassword, data.newPassword);
+      
+      if (response && response.success) {
+        toast.success('Password changed successfully');
+        resetPassword(); // Clear form fields
+      } else {
+        toast.error(response?.message || 'Failed to change password');
+      }
     } catch (error) {
-      toast.error('Failed to change password');
       console.error('Password change error:', error);
+      toast.error('Failed to change password');
     } finally {
       setLoading(false);
     }
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return !isNaN(date.getTime()) ? date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
-    });
+    }) : 'N/A';
   };
+
+  // Show loading spinner while auth context is loading
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -362,7 +400,7 @@ const Profile = () => {
                       <Calendar className="h-5 w-5 text-gray-400" />
                       <div>
                         <p className="text-sm font-medium text-gray-900">Member Since</p>
-                        <p className="text-sm text-gray-600">{formatDate(user?.createdAt)}</p>
+                        <p className="text-sm text-gray-600">{user?.createdAt ? formatDate(user?.createdAt) : 'N/A'}</p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">

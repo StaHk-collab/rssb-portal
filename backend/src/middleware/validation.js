@@ -26,6 +26,17 @@ const schemas = {
     isActive: Joi.boolean()
   }).min(1),
 
+  userProfileUpdate: Joi.object({
+    firstName: Joi.string().min(2).max(50).required(),
+    lastName: Joi.string().min(2).max(50).required(),
+    email: Joi.string().email().required()
+  }),
+
+  passwordChange: Joi.object({
+    currentPassword: Joi.string().min(6).required(),
+    newPassword: Joi.string().min(6).required()
+  }),
+
   // Sewadar validation schemas
   sewadarCreate: Joi.object({
     firstName: Joi.string().min(2).max(50).required(),

@@ -27,7 +27,12 @@ const Header = ({ onMenuClick, user }) => {
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, []);
 
   const handleLogout = async () => {
@@ -92,19 +97,20 @@ const Header = ({ onMenuClick, user }) => {
             <div className="relative" ref={userMenuRef}>
               {/* <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                onTouchStart={() => setUserMenuOpen(!userMenuOpen)} // Add touch support
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  setUserMenuOpen(prev => !prev);
+                }}
                 className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-100 transition-all duration-200 hover:scale-[1.02] cursor-pointer"
                 style={{ 
                   touchAction: 'manipulation',
                   WebkitTapHighlightColor: 'transparent'
                 }}
+                aria-expanded={userMenuOpen}
+                aria-haspopup="true"
               > */}
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                onTouchStart={(e) => {
-                  e.preventDefault();
-                  setUserMenuOpen(prev => !prev);
-                }}
                 className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-100 transition-all duration-200 hover:scale-[1.02] cursor-pointer"
                 style={{ 
                   touchAction: 'manipulation',

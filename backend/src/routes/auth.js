@@ -152,7 +152,100 @@ router.get('/me', authenticateToken, asyncHandler(async (req, res) => {
   });
 }));
 
-// ✅ FIXED: Logout with PostgreSQL audit log
+// Update user profile
+router.put('/profile', authenticateToken, validate('userProfileUpdate'), asyncHandler(async (req, res) => {
+  const { firstName, lastName, email } = req.body;
+  const userId = req.user.userId;
+  const db = getDatabase();
+
+  // Check if email is being changed and if it already exists
+  if (email !== req.user.email) {
+    const existingResult = await db.query('SELECT id FROM users WHERE email = $1 AND id != $2', [email, userId]);
+    if (existingResult.rows.length > 0) {
+      throw new AppError('Email already exists', 409);
+    }
+  }
+
+  // Update user profile
+  await db.query(
+    'UPDATE users SET firstname = $1, lastname = $2, email = $3, updatedat = NOW() WHERE id = $4',
+    [firstName, lastName, email, userId]
+  );
+
+  // Get updated user data
+  const userResult = await db.query(`
+    SELECT id, email, firstname AS "firstName", lastname AS "lastName", 
+           role, "isActive" AS "isActive", createdat AS "createdAt", 
+           updatedat AS "updatedAt"
+    FROM users 
+    WHERE id = $1
+  `, [userId]);
+
+  const updatedUser = userResult.rows[0];
+
+  // Log profile update
+  await db.query(
+    'INSERT INTO audit_logs (id, action, userid, entity, entityid, details) VALUES ($1, $2, $3, $4, $5, $6)',
+    [uuidv4(), 'UPDATE_PROFILE', userId, 'USER', userId, `Profile updated from ${req.ip}`]
+  );
+
+  logger.info(`User ${req.user.email} updated profile from ${req.ip}`);
+
+  res.json({
+    success: true,
+    message: 'Profile updated successfully',
+    user: updatedUser
+  });
+}));
+
+// Change password endpoint
+router.post('/change-password', authenticateToken, validate('passwordChange'), asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const userId = req.user.userId;
+  const db = getDatabase();
+
+  // Get user with current password
+  const userResult = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
+  const user = userResult.rows[0];
+
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  // Verify current password
+  const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+  
+  if (!isCurrentPasswordValid) {
+    return res.status(401).json({ 
+      success: false, 
+      message: 'Current password is incorrect' 
+    }); // ✅ This keeps the user logged in
+  }
+
+  // Hash new password
+  const hashedNewPassword = await bcrypt.hash(newPassword, 12);
+
+  // Update password in database
+  await db.query(
+    'UPDATE users SET password = $1, updatedat = NOW() WHERE id = $2',
+    [hashedNewPassword, userId]
+  );
+
+  // Log password change
+  await db.query(
+    'INSERT INTO audit_logs (id, action, userid, entity, entityid, details) VALUES ($1, $2, $3, $4, $5, $6)',
+    [uuidv4(), 'CHANGE_PASSWORD', userId, 'USER', userId, `Password changed from ${req.ip}`]
+  );
+
+  logger.info(`User ${req.user.email} changed password from ${req.ip}`);
+
+  res.json({
+    success: true,
+    message: 'Password changed successfully'
+  });
+}));
+
+// Logout with PostgreSQL audit log
 router.post('/logout', authenticateToken, asyncHandler(async (req, res) => {
   const db = getDatabase();
   
